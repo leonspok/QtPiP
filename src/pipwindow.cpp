@@ -17,9 +17,9 @@
 #include <QPropertyAnimation>
 #include <QGraphicsBlurEffect>
 
-#include <windowdragger.h>
-#include <videowidget.h>
-#include <finishablesizegrip.h>
+#include <src/windowdragger.h>
+#include <src/videowidget.h>
+#include <src/finishablesizegrip.h>
 
 #define OFFSET 20
 
@@ -53,12 +53,12 @@ PiPWindow::PiPWindow(QWidget *parent)
     this->rootContainer->setLayout(layout);
 
     this->playbackButton = new QPushButton(this->windowDragger);
-    this->playbackButton->setIcon(QIcon(":/icons/play"));
+    this->playbackButton->setIcon(QIcon(":play"));
     this->playbackButton->setVisible(false);
     connect(this->playbackButton, &QPushButton::pressed, this, &PiPWindow::togglePlayback);
 
     this->exitButton = new QPushButton(this->windowDragger);
-    this->exitButton->setIcon(QIcon(":/icons/exit"));
+    this->exitButton->setIcon(QIcon(":exit"));
     this->exitButton->setVisible(false);
     connect(this->exitButton, &QPushButton::pressed, this, &PiPWindow::exitPiP);
 
@@ -134,9 +134,9 @@ void PiPWindow::videoSizeChanged(QSize size) {
 
 void PiPWindow::playbackChanged(bool isPlaying) {
     if (isPlaying) {
-        this->playbackButton->setIcon(QIcon(":/icons/pause"));
+        this->playbackButton->setIcon(QIcon(":pause"));
     } else {
-        this->playbackButton->setIcon(QIcon(":/icons/play"));
+        this->playbackButton->setIcon(QIcon(":play"));
     }
 }
 

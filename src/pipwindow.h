@@ -6,8 +6,8 @@
 #include <QSlider>
 #include <mpv/client.h>
 
-#include <videowidget.h>
-#include <windowdragger.h>
+#include <src/videowidget.h>
+#include <src/windowdragger.h>
 
 class PiPWindow : public QMainWindow
 {

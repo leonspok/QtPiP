@@ -27,17 +27,18 @@ CONFIG += link_pkgconfig debug
 PKGCONFIG += mpv
 
 SOURCES += \
-        main.cpp \
-        pipwindow.cpp \
-    windowdragger.cpp \
-    videowidget.cpp \
-    finishablesizegrip.cpp
+    src/finishablesizegrip.cpp \
+    src/main.cpp \
+    src/pipwindow.cpp \
+    src/videowidget.cpp \
+    src/windowdragger.cpp
 
 HEADERS += \
-        pipwindow.h \
-    windowdragger.h \
-    videowidget.h \
-    finishablesizegrip.h
+    src/finishablesizegrip.h \
+    src/pipwindow.h \
+    src/videowidget.h \
+    src/windowdragger.h
+
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
