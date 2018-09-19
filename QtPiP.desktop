@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=0.0.1
+Type=Application
+Terminal=false
+Name=QtPiP
+Exec=/usr/bin/QtPiP --source %F
+Comment=Picture-in-Picture like on macOS
+Icon=/usr/share/pixmaps/qtpip.ico
+StartupNotify=false
+Encoding=UTF-8
+Categories=Video;Qt;
