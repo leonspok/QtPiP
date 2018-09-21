@@ -38,6 +38,13 @@ private slots:
     void exitPiP();
     void sliderPressed();
     void sliderReleased();
+    void audioTrackButtonPressed();
+    void subtitlesTrackButtonPressed();
+
+    void audioTrackSelected(QAction *action);
+    void subtitlesTrackSelected(QAction *action);
+    void audioTrackMenuWillBeHidden();
+    void subtitlesTrackMenuWillBeHidden();
 
 private:
     QWidget *rootContainer;
@@ -45,6 +52,8 @@ private:
     WindowDragger *windowDragger;
     QPushButton *playbackButton;
     QPushButton *exitButton;
+    QPushButton *audioTrackButton;
+    QPushButton *subtitlesTrackButton;
     QSlider *progressSlider;
     QScreen *getCurrentScreen();
     float aspectRatio;

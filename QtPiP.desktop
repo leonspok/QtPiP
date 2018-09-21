@@ -1,9 +1,9 @@
 [Desktop Entry]
-Version=0.0.1
+Version=0.0.2
 Type=Application
 Terminal=false
 Name=QtPiP
-Exec=/usr/bin/QtPiP --source %F
+Exec=/usr/bin/qtpip --source %F
 Comment=Picture-in-Picture like on macOS
 Icon=/usr/share/pixmaps/qtpip.ico
 StartupNotify=false

@@ -16,6 +16,7 @@
 #include <QSizeGrip>
 #include <QPropertyAnimation>
 #include <QGraphicsBlurEffect>
+#include <QMenu>
 
 #include <src/windowdragger.h>
 #include <src/videowidget.h>
@@ -62,6 +63,16 @@ PiPWindow::PiPWindow(QWidget *parent)
     this->exitButton->setVisible(false);
     connect(this->exitButton, &QPushButton::pressed, this, &PiPWindow::exitPiP);
 
+    this->audioTrackButton = new QPushButton(this->windowDragger);
+    this->audioTrackButton->setIcon(QIcon(":audio"));
+    this->audioTrackButton->setVisible(false);
+    connect(this->audioTrackButton, &QPushButton::pressed, this, &PiPWindow::audioTrackButtonPressed);
+
+    this->subtitlesTrackButton = new QPushButton(this->windowDragger);
+    this->subtitlesTrackButton->setIcon(QIcon(":subtitles"));
+    this->subtitlesTrackButton->setVisible(false);
+    connect(this->subtitlesTrackButton, &QPushButton::pressed, this, &PiPWindow::subtitlesTrackButtonPressed);
+
     this->progressSlider = new QSlider(Qt::Horizontal, this->windowDragger);
     this->progressSlider->setMaximum(1000000);
     this->progressSlider->setMinimum(0);
@@ -72,6 +83,8 @@ PiPWindow::PiPWindow(QWidget *parent)
     QHBoxLayout *controlsLayout = new QHBoxLayout();
     controlsLayout->setContentsMargins(OFFSET, 0, OFFSET, 0);
     controlsLayout->addWidget(this->playbackButton, 0, Qt::AlignBottom | Qt::AlignLeft);
+    controlsLayout->addWidget(this->audioTrackButton, 0, Qt::AlignBottom | Qt::AlignLeft);
+    controlsLayout->addWidget(this->subtitlesTrackButton, 0, Qt::AlignBottom | Qt::AlignLeft);
     controlsLayout->addWidget(this->exitButton, 0, Qt::AlignBottom | Qt::AlignLeft);
     controlsLayout->addWidget(this->progressSlider, 1);
 
@@ -161,12 +174,16 @@ void PiPWindow::onWindowHover() {
     this->playbackButton->setVisible(true);
     this->exitButton->setVisible(true);
     this->progressSlider->setVisible(true);
+    this->audioTrackButton->setVisible(true);
+    this->subtitlesTrackButton->setVisible(true);
 }
 
 void PiPWindow::onWindowLeave() {
     this->playbackButton->setVisible(false);
     this->exitButton->setVisible(false);
     this->progressSlider->setVisible(false);
+    this->audioTrackButton->setVisible(false);
+    this->subtitlesTrackButton->setVisible(false);
 }
 
 void PiPWindow::togglePlayback() {
@@ -179,7 +196,7 @@ void PiPWindow::togglePlayback() {
 
 void PiPWindow::exitPiP() {
     this->videoWidget->pause();
-    QApplication::quit();
+    QApplication::exit(0);
 }
 
 void PiPWindow::sliderPressed() {
@@ -190,6 +207,92 @@ void PiPWindow::sliderReleased() {
     this->ignoreProgressChange = false;
     float progress = static_cast<float>(this->progressSlider->value()) / static_cast<float>(this->progressSlider->maximum());
     this->videoWidget->setPosition(progress);
+}
+
+void PiPWindow::audioTrackButtonPressed() {
+    QMenu *menu = new QMenu(this->audioTrackButton);
+    connect(menu, &QMenu::triggered, this, &PiPWindow::audioTrackSelected);
+    connect(menu, &QMenu::aboutToHide, this, &PiPWindow::audioTrackMenuWillBeHidden);
+
+    QList<Track> *tracks = this->videoWidget->getTracks();
+    for (int i = 0; i < tracks->size(); i++) {
+        Track track = tracks->at(i);
+        if (track.type == TrackTypeAudio) {
+            QString trackName;
+            if (track.title.isEmpty()) {
+                trackName = QString();
+                trackName.sprintf("Track #%d", track.id);
+            } else {
+                trackName = track.title;
+            }
+            QAction *action = new QAction(trackName, menu);
+            action->setData(track.id);
+            action->setCheckable(true);
+            action->setChecked(track.selected);
+            menu->addAction(action);
+        }
+    }
+
+    this->audioTrackButton->setMenu(menu);
+    this->audioTrackButton->showMenu();
+}
+
+void PiPWindow::subtitlesTrackButtonPressed() {
+    QMenu *menu = new QMenu(this->subtitlesTrackButton);
+    connect(menu, &QMenu::triggered, this, &PiPWindow::subtitlesTrackSelected);
+    connect(menu, &QMenu::aboutToHide, this, &PiPWindow::subtitlesTrackMenuWillBeHidden);
+
+    QList<Track> *tracks = this->videoWidget->getTracks();
+    for (int i = 0; i < tracks->size(); i++) {
+        Track track = tracks->at(i);
+        if (track.type == TrackTypeSubtitles) {
+            QString trackName;
+            if (track.title.isEmpty()) {
+                trackName = QString();
+                trackName.sprintf("Subtitles #%d", track.id);
+            } else {
+                trackName = track.title;
+            }
+            QAction *action = new QAction(trackName, menu);
+            action->setData(track.id);
+            action->setCheckable(true);
+            action->setChecked(track.selected);
+            menu->addAction(action);
+        }
+    }
+
+    this->subtitlesTrackButton->setMenu(menu);
+    this->subtitlesTrackButton->showMenu();
+}
+
+void PiPWindow::audioTrackSelected(QAction *action) {
+    if (action->isChecked()) {
+        Track track;
+        track.id = action->data().toInt();
+        track.type = TrackTypeAudio;
+        this->videoWidget->enableTrack(track);
+    }
+    this->audioTrackButton->setMenu(nullptr);
+}
+
+void PiPWindow::audioTrackMenuWillBeHidden() {
+    this->audioTrackButton->setMenu(nullptr);
+}
+
+void PiPWindow::subtitlesTrackSelected(QAction *action) {
+    if (action->isChecked()) {
+        Track track;
+        track.id = action->data().toInt();
+        track.type = TrackTypeSubtitles;
+        this->videoWidget->enableTrack(track);
+    } else {
+        this->videoWidget->disableSubtitlesTrack();
+    }
+    this->subtitlesTrackButton->setMenu(nullptr);
+}
+
+void PiPWindow::subtitlesTrackMenuWillBeHidden() {
+    this->subtitlesTrackButton->setMenu(nullptr);
 }
 
 void PiPWindow::moveToCorner(bool forceVisible) {

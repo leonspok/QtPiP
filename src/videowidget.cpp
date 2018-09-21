@@ -4,6 +4,7 @@
 
 #include <QtGui/QOpenGLContext>
 #include <QtCore/QMetaObject>
+#include <QLinkedList>
 
 static void wakeup(void *ctx)
 {
@@ -96,6 +97,64 @@ void VideoWidget::setPosition(float newPosition) {
     double duration = mpv::qt::get_property_variant(this->mpv, "duration").toDouble();
     double currentTime = duration * static_cast<double>(newPosition);
     mpv::qt::set_property_variant(this->mpv, "time-pos", currentTime);
+}
+
+QList<Track> *VideoWidget::getTracks() {
+    QList<Track> *tracks = new QList<Track>();
+    int tracksCount = mpv::qt::get_property_variant(this->mpv, "track-list/count").toInt();
+    for (int i = 0; i < tracksCount; i++) {
+        QString typePropertyName;
+        typePropertyName.sprintf("track-list/%d/type", i);
+        QString titlePropertyName;
+        titlePropertyName.sprintf("track-list/%d/title", i);
+        QString langPropertyName;
+        langPropertyName.sprintf("track-list/%d/lang", i);
+        QString selectedPropertyName;
+        selectedPropertyName.sprintf("track-list/%d/selected", i);
+        QString idPropertyName;
+        idPropertyName.sprintf("track-list/%d/id", i);
+        QString type = mpv::qt::get_property_variant(this->mpv, typePropertyName).toString();
+        QString title = mpv::qt::get_property_variant(this->mpv, titlePropertyName).toString();
+        QString lang = mpv::qt::get_property_variant(this->mpv, langPropertyName).toString();
+        bool selected = mpv::qt::get_property_variant(this->mpv, selectedPropertyName).toBool();
+        int id = mpv::qt::get_property_variant(this->mpv, idPropertyName).toInt();
+
+        Track track;
+        track.id = id;
+        track.title = title;
+        track.language = lang;
+        track.selected = selected;
+
+        if (type == QString("video")) {
+            track.type = TrackTypeVideo;
+        } else if (type == QString("audio")) {
+            track.type = TrackTypeAudio;
+        } else {
+            track.type = TrackTypeSubtitles;
+        }
+
+        tracks->append(track);
+    }
+
+    return tracks;
+}
+
+void VideoWidget::enableTrack(Track track) {
+    switch (track.type) {
+    case TrackTypeAudio:
+        mpv::qt::set_option_variant(this->mpv, "aid", track.id);
+        break;
+    case TrackTypeVideo:
+        mpv::qt::set_option_variant(this->mpv, "vid", track.id);
+        break;
+    case TrackTypeSubtitles:
+        mpv::qt::set_option_variant(this->mpv, "sid", track.id);
+        break;
+    }
+}
+
+void VideoWidget::disableSubtitlesTrack() {
+    mpv::qt::set_option_variant(this->mpv, "sid", "no");
 }
 
 void VideoWidget::initializeGL()

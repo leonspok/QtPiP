@@ -1,5 +1,5 @@
-qtpip (0.0.1-0ubuntu1) bionic; urgency=low
+qtpip (0.0.2-0ubuntu1) bionic; urgency=low
 
-  * Initial release
+  * Added options to select audio tracks and subtitles
 
  -- [ultimate] Igor Savelev <igor9774@gmail.com> Wed, 19 Sep 2018 21:51:27 +0100

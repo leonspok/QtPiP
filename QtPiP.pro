@@ -6,13 +6,13 @@
 
 QT       += core gui widgets
 
-TARGET = QtPiP
+TARGET = qtpip
 TEMPLATE = app
 INCLUDEPATH += .
 
 NAME = QtPiP
 DESCRIPTION = "Analog for Picture-in-Picture from macOS"
-VERSION = 0.0.1
+VERSION = 0.0.2
 LICENSE = "MIT"
 
 # The following define makes your compiler emit warnings if you use
@@ -43,7 +43,8 @@ HEADERS += \
     src/finishablesizegrip.h \
     src/pipwindow.h \
     src/videowidget.h \
-    src/windowdragger.h
+    src/windowdragger.h \
+    src/track.h
 
 
 # Default rules for deployment.
@@ -71,6 +72,4 @@ unix {
     desktop.files += $${TARGET}.desktop
     pixmaps.path = $$DATADIR/pixmaps/
     pixmaps.files += icons/qtpip.ico
-#    icon22.path = $$DATADIR/icons/hicolor/22x22/apps/
-#    icon22.files += images/$${TARGET}.png
 }

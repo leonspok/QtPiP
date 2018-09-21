@@ -7,18 +7,26 @@
 
 #include <QtWidgets/QOpenGLWidget>
 
+#include <src/track.h>
+
 class VideoWidget Q_DECL_FINAL: public QOpenGLWidget
 {
     Q_OBJECT
 public:
     VideoWidget(QWidget *parent = nullptr, Qt::WindowFlags f = nullptr);
     ~VideoWidget() override;
-    void play();
-    void pause();
+
     bool isPlaying();
     float position();
+    QList<Track> *getTracks();
+
+    void play();
+    void pause();
     void setPosition(float newPosition);
+    void enableTrack(Track track);
+    void disableSubtitlesTrack();
     void openUrl(QString urlString);
+
 signals:
     void playbackChanged(bool isPlaying);
     void videoSizeChanged(QSize size);

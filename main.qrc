@@ -6,5 +6,9 @@
         <file alias="pause@2x">icons/pause_48</file>
         <file alias="play">icons/play_24</file>
         <file alias="play@2x">icons/play_48</file>
+        <file alias="audio">icons/audio_24x24</file>
+        <file alias="audio@2x">icons/audio_48x48</file>
+        <file alias="subtitles">icons/subtitles_24x24</file>
+        <file alias="subtitles@2x">icons/subtitles_48x48</file>
     </qresource>
 </RCC>
