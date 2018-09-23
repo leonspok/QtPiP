@@ -4,10 +4,25 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QSlider>
+#include <QStackedLayout>
 #include <mpv/client.h>
 
-#include <src/videowidget.h>
-#include <src/windowdragger.h>
+#include <src/mutedoverlaywidget.h>
+#include <src/playerwidget.h>
+#include <src/webcontentwidget.h>
+#include <src/finishablesizegrip.h>
+#include <src/draggingbutton.h>
+
+typedef enum {
+    PiPWindowModePlayer,
+    PiPWindowModeWeb
+} PiPWindowMode;
+
+typedef enum {
+    DoNotForcePosition,
+    ForceVisible,
+    ForceHidden
+} PiPPositionMode;
 
 class PiPWindow : public QMainWindow
 {
@@ -17,50 +32,41 @@ public:
     PiPWindow(QWidget *parent = nullptr);
     ~PiPWindow() override;
 
-    void openURL(QString urlString);
+    PiPWindowMode mode();
+    void openUrl(QString urlString, PiPWindowMode mode);
     void moveToDefaultPosition();
-    void setVisuallyMuted(bool muted);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private slots:
+    void exitPiP();
     void videoSizeChanged(QSize size);
-    void playbackChanged(bool isPlaying);
-    void progressChanged(float progress);
 
     void windowDraggedInDirection(QPoint direction);
     void windowDraggingFinished();
     void onWindowHover();
     void onWindowLeave();
-
-    void togglePlayback();
-    void exitPiP();
-    void sliderPressed();
-    void sliderReleased();
-    void audioTrackButtonPressed();
-    void subtitlesTrackButtonPressed();
-
-    void audioTrackSelected(QAction *action);
-    void subtitlesTrackSelected(QAction *action);
-    void audioTrackMenuWillBeHidden();
-    void subtitlesTrackMenuWillBeHidden();
+    void hideWindow();
 
 private:
     QWidget *rootContainer;
-    VideoWidget *videoWidget;
-    WindowDragger *windowDragger;
-    QPushButton *playbackButton;
+
+    PlayerWidget *playerWidget;
+    WebContentWidget *webContentWidget;
+    MutedOverlayWidget *mutedOverlayWidget;
+    DraggingButton *draggingView;
+
     QPushButton *exitButton;
-    QPushButton *audioTrackButton;
-    QPushButton *subtitlesTrackButton;
-    QSlider *progressSlider;
-    QScreen *getCurrentScreen();
+    FinishableSizeGrip *bottomRightSizeGrip;
+
+    PiPWindowMode currentMode;
     float aspectRatio;
     bool visuallyMuted;
-    bool ignoreProgressChange;
 
-    void moveToCorner(bool forceVisible);
+    QScreen *getCurrentScreen();
+    void moveToCorner(PiPPositionMode positionMode = DoNotForcePosition);
+    void setVisuallyMuted(bool muted);
 };
 
 #endif // PIPWINDOW_H

@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets
+QT       += core gui widgets webenginewidgets
 
 TARGET = qtpip
 TEMPLATE = app
@@ -12,7 +12,7 @@ INCLUDEPATH += .
 
 NAME = QtPiP
 DESCRIPTION = "Analog for Picture-in-Picture from macOS"
-VERSION = 0.0.2
+VERSION = 0.0.3
 LICENSE = "MIT"
 
 # The following define makes your compiler emit warnings if you use
@@ -37,14 +37,23 @@ SOURCES += \
     src/main.cpp \
     src/pipwindow.cpp \
     src/videowidget.cpp \
-    src/windowdragger.cpp
+    src/playerwidget.cpp \
+    src/webcontentwidget.cpp \
+    src/rootcontainer.cpp \
+    src/mutedoverlaywidget.cpp \
+    src/draggingbutton.cpp
 
 HEADERS += \
     src/finishablesizegrip.h \
     src/pipwindow.h \
     src/videowidget.h \
-    src/windowdragger.h \
-    src/track.h
+    src/track.h \
+    src/playerwidget.h \
+    src/webcontentwidget.h \
+    src/constants.h \
+    src/rootcontainer.h \
+    src/mutedoverlaywidget.h \
+    src/draggingbutton.h
 
 
 # Default rules for deployment.

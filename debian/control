@@ -2,7 +2,7 @@ Source: qtpip
 Section: Multimedia
 Priority: optional
 Maintainer: Igor Savelev <igor9774@gmail.com>
-Build-Depends: debhelper (>= 10), qt5-qmake, qttools5-dev, qtbase5-dev, libdrm-dev, qttools5-dev-tools, qt5-default, pkg-config, libmpv-dev 
+Build-Depends: debhelper (>= 10), qt5-qmake, qttools5-dev, qtbase5-dev, libdrm-dev, qttools5-dev-tools, qt5-default, qtwebengine5-dev, qtwebengine5-dev-tools, pkg-config, libmpv-dev 
 Standards-Version: 4.1.2
 Homepage: https://leonspok.tumblr.com
 Vcs-Git: https://github.com/leonspok/QtPiP.git

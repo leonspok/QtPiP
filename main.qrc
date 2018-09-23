@@ -10,5 +10,7 @@
         <file alias="audio@2x">icons/audio_48x48</file>
         <file alias="subtitles">icons/subtitles_24x24</file>
         <file alias="subtitles@2x">icons/subtitles_48x48</file>
+        <file alias="drag">icons/drag_24x24</file>
+        <file alias="drag@2x">icons/drag_48x48</file>
     </qresource>
 </RCC>

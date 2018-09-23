@@ -18,11 +18,11 @@
 #include <QGraphicsBlurEffect>
 #include <QMenu>
 
-#include <src/windowdragger.h>
+#include <src/constants.h>
+#include <src/mutedoverlaywidget.h>
 #include <src/videowidget.h>
 #include <src/finishablesizegrip.h>
-
-#define OFFSET 20
+#include <src/rootcontainer.h>
 
 PiPWindow::PiPWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -32,75 +32,44 @@ PiPWindow::PiPWindow(QWidget *parent)
                          Qt::FramelessWindowHint|
                          Qt::CustomizeWindowHint);
 
-    this->rootContainer = new QWidget(this);
+    RootContainer *rootContainer = new RootContainer(this);
+    connect(rootContainer, &RootContainer::draggedInDirection, this, &PiPWindow::windowDraggedInDirection);
+    connect(rootContainer, &RootContainer::draggingFinished, this, &PiPWindow::windowDraggingFinished);
+    connect(rootContainer, &RootContainer::onMouseHover, this, &PiPWindow::onWindowHover);
+    connect(rootContainer, &RootContainer::onMouseLeave, this, &PiPWindow::onWindowLeave);
+
+    this->rootContainer = rootContainer;
     this->setCentralWidget(this->rootContainer);
 
-    this->videoWidget = new VideoWidget(this->rootContainer);
-    connect(this->videoWidget, &VideoWidget::videoSizeChanged, this, &PiPWindow::videoSizeChanged);
-    connect(this->videoWidget, &VideoWidget::playbackChanged, this, &PiPWindow::playbackChanged);
-    connect(this->videoWidget, &VideoWidget::positionChanged, this, &PiPWindow::progressChanged);
+    this->playerWidget = new PlayerWidget(this->rootContainer);
+    this->playerWidget->hide();
+    connect(this->playerWidget, &PlayerWidget::wantsToChangeSizeTo, this, &PiPWindow::videoSizeChanged);
 
-    this->windowDragger = new WindowDragger(this->rootContainer);
-    this->windowDragger->setAttribute(Qt::WA_NoSystemBackground, true);
-    connect(this->windowDragger, &WindowDragger::draggedInDirection, this, &PiPWindow::windowDraggedInDirection);
-    connect(this->windowDragger, &WindowDragger::draggingFinished, this, &PiPWindow::windowDraggingFinished);
-    connect(this->windowDragger, &WindowDragger::onMouseHover, this, &PiPWindow::onWindowHover);
-    connect(this->windowDragger, &WindowDragger::onMouseLeave, this, &PiPWindow::onWindowLeave);
+    this->webContentWidget = new WebContentWidget(this->rootContainer);
+    this->webContentWidget->hide();
 
-    QStackedLayout *layout = new QStackedLayout();
-    layout->addWidget(this->windowDragger);
-    layout->addWidget(this->videoWidget);
-    layout->setStackingMode(QStackedLayout::StackAll);
-    this->rootContainer->setLayout(layout);
+    this->mutedOverlayWidget = new MutedOverlayWidget(this->rootContainer);
+    this->mutedOverlayWidget->setMuted(false);
 
-    this->playbackButton = new QPushButton(this->windowDragger);
-    this->playbackButton->setIcon(QIcon(":play"));
-    this->playbackButton->setVisible(false);
-    connect(this->playbackButton, &QPushButton::pressed, this, &PiPWindow::togglePlayback);
-
-    this->exitButton = new QPushButton(this->windowDragger);
+    this->exitButton = new QPushButton(this->rootContainer);
     this->exitButton->setIcon(QIcon(":exit"));
+    this->exitButton->setFixedSize(22, 22);
     this->exitButton->setVisible(false);
-    connect(this->exitButton, &QPushButton::pressed, this, &PiPWindow::exitPiP);
+    connect(this->exitButton, &QPushButton::clicked, this, &PiPWindow::exitPiP);
 
-    this->audioTrackButton = new QPushButton(this->windowDragger);
-    this->audioTrackButton->setIcon(QIcon(":audio"));
-    this->audioTrackButton->setVisible(false);
-    connect(this->audioTrackButton, &QPushButton::pressed, this, &PiPWindow::audioTrackButtonPressed);
+    this->draggingView = new DraggingButton(this->rootContainer);
+    this->draggingView->setFixedSize(22, 22);
+    this->draggingView->setVisible(false);
+    connect(this->draggingView, &DraggingButton::draggedInDirection, this, &PiPWindow::windowDraggedInDirection);
+    connect(this->draggingView, &DraggingButton::draggingFinished, this, &PiPWindow::windowDraggingFinished);
+    connect(this->draggingView, &DraggingButton::doubleClicked, this, &PiPWindow::hideWindow);
 
-    this->subtitlesTrackButton = new QPushButton(this->windowDragger);
-    this->subtitlesTrackButton->setIcon(QIcon(":subtitles"));
-    this->subtitlesTrackButton->setVisible(false);
-    connect(this->subtitlesTrackButton, &QPushButton::pressed, this, &PiPWindow::subtitlesTrackButtonPressed);
-
-    this->progressSlider = new QSlider(Qt::Horizontal, this->windowDragger);
-    this->progressSlider->setMaximum(1000000);
-    this->progressSlider->setMinimum(0);
-    this->progressSlider->setVisible(false);
-    connect(this->progressSlider, &QSlider::sliderReleased, this, &PiPWindow::sliderReleased);
-    connect(this->progressSlider, &QSlider::sliderPressed, this, &PiPWindow::sliderPressed);
-
-    QHBoxLayout *controlsLayout = new QHBoxLayout();
-    controlsLayout->setContentsMargins(OFFSET, 0, OFFSET, 0);
-    controlsLayout->addWidget(this->playbackButton, 0, Qt::AlignBottom | Qt::AlignLeft);
-    controlsLayout->addWidget(this->audioTrackButton, 0, Qt::AlignBottom | Qt::AlignLeft);
-    controlsLayout->addWidget(this->subtitlesTrackButton, 0, Qt::AlignBottom | Qt::AlignLeft);
-    controlsLayout->addWidget(this->exitButton, 0, Qt::AlignBottom | Qt::AlignLeft);
-    controlsLayout->addWidget(this->progressSlider, 1);
-
-    FinishableSizeGrip *bottomRightSizeGrip = new FinishableSizeGrip(this);
-    connect(bottomRightSizeGrip, &FinishableSizeGrip::resizeFinished, this, &PiPWindow::windowDraggingFinished);
-
-    QVBoxLayout *vLayout = new QVBoxLayout();
-    vLayout->setContentsMargins(0, 0, 0, 0);
-    vLayout->addStretch();
-    vLayout->addLayout(controlsLayout);
-    vLayout->addWidget(bottomRightSizeGrip, 0, Qt::AlignBottom | Qt::AlignRight);
-    this->windowDragger->setLayout(vLayout);
+    this->bottomRightSizeGrip = new FinishableSizeGrip(this->rootContainer);
+    connect(this->bottomRightSizeGrip, &FinishableSizeGrip::resizeFinished, this, &PiPWindow::windowDraggingFinished);
 
     this->aspectRatio = 16.0f / 9;
-    this->ignoreProgressChange = false;
-    this->setMinimumSize(160, 90);
+    this->setMinimumSize(150, 150);
+    this->setVisuallyMuted(false);
 }
 
 PiPWindow::~PiPWindow()
@@ -108,14 +77,47 @@ PiPWindow::~PiPWindow()
 
 }
 
-void PiPWindow::openURL(QString urlString) {
-    this->videoWidget->openUrl(urlString);
+PiPWindowMode PiPWindow::mode() {
+    return this->currentMode;
+}
+
+void PiPWindow::openUrl(QString urlString, PiPWindowMode mode) {
+    this->currentMode = mode;
+
+    this->playerWidget->hide();
+    this->playerWidget->reset();
+    this->webContentWidget->hide();
+    this->webContentWidget->reset();
+
+    switch (mode) {
+        case PiPWindowModePlayer: {
+            QStackedLayout *layout = new QStackedLayout();
+            layout->addWidget(this->mutedOverlayWidget);
+            layout->addWidget(this->playerWidget);
+            layout->setStackingMode(QStackedLayout::StackAll);
+            this->rootContainer->setLayout(layout);
+            this->playerWidget->openUrl(urlString);
+            this->playerWidget->show();
+            break;
+        }
+        case PiPWindowModeWeb: {
+            QStackedLayout *layout = new QStackedLayout();
+            layout->addWidget(this->mutedOverlayWidget);
+            layout->addWidget(this->webContentWidget);
+            layout->setStackingMode(QStackedLayout::StackAll);
+            this->rootContainer->setLayout(layout);
+            this->webContentWidget->openUrl(urlString);
+            this->webContentWidget->show();
+            break;
+        }
+    }
 }
 
 void PiPWindow::moveToDefaultPosition() {
     QSize screenSize = this->getCurrentScreen()->size();
-    this->move(screenSize.width() - OFFSET - this->size().width(),
-               screenSize.height() - OFFSET - this->size().height());
+    this->resize(480, 320);
+    this->move(screenSize.width() - BOUNDS_OFFSET - this->size().width(),
+               screenSize.height() - BOUNDS_OFFSET - this->size().height());
     this->windowDraggingFinished();
 }
 
@@ -128,8 +130,8 @@ void PiPWindow::videoSizeChanged(QSize size) {
 
     QRect screenRect = this->getCurrentScreen()->geometry();
 
-    int screenWidth = screenRect.width() - OFFSET * 2;
-    int screenHeight = screenRect.height() - OFFSET * 2;
+    int screenWidth = screenRect.width() - BOUNDS_OFFSET * 2;
+    int screenHeight = screenRect.height() - BOUNDS_OFFSET * 2;
 
     int targetWidth, targetHeight;
 
@@ -142,22 +144,7 @@ void PiPWindow::videoSizeChanged(QSize size) {
     }
 
     this->resize(targetWidth, targetHeight);
-    this->moveToCorner(true);
-}
-
-void PiPWindow::playbackChanged(bool isPlaying) {
-    if (isPlaying) {
-        this->playbackButton->setIcon(QIcon(":pause"));
-    } else {
-        this->playbackButton->setIcon(QIcon(":play"));
-    }
-}
-
-void PiPWindow::progressChanged(float progress) {
-    if (this->ignoreProgressChange) {
-        return;
-    }
-    this->progressSlider->setValue(static_cast<int>(round(progress * static_cast<float>(this->progressSlider->maximum()))));
+    this->moveToCorner(ForceVisible);
 }
 
 void PiPWindow::windowDraggedInDirection(QPoint direction) {
@@ -167,167 +154,70 @@ void PiPWindow::windowDraggedInDirection(QPoint direction) {
 }
 
 void PiPWindow::windowDraggingFinished() {
-    this->moveToCorner(false);
+    this->moveToCorner();
 }
 
 void PiPWindow::onWindowHover() {
-    this->playbackButton->setVisible(true);
+    if (this->playerWidget != nullptr) {
+        this->playerWidget->setControlsVisible(true);
+    }
+    if (this->mode() == PiPWindowModeWeb && !this->visuallyMuted) {
+        this->activateWindow();
+    }
     this->exitButton->setVisible(true);
-    this->progressSlider->setVisible(true);
-    this->audioTrackButton->setVisible(true);
-    this->subtitlesTrackButton->setVisible(true);
+    this->draggingView->setVisible(this->mode() == PiPWindowModeWeb && !this->visuallyMuted);
 }
 
 void PiPWindow::onWindowLeave() {
-    this->playbackButton->setVisible(false);
+    if (this->playerWidget != nullptr) {
+        this->playerWidget->setControlsVisible(false);
+    }
     this->exitButton->setVisible(false);
-    this->progressSlider->setVisible(false);
-    this->audioTrackButton->setVisible(false);
-    this->subtitlesTrackButton->setVisible(false);
+    this->draggingView->setVisible(false);
 }
 
-void PiPWindow::togglePlayback() {
-    if (this->videoWidget->isPlaying()) {
-        this->videoWidget->pause();
-    } else {
-        this->videoWidget->play();
-    }
+void PiPWindow::hideWindow() {
+    this->moveToCorner(ForceHidden);
 }
 
 void PiPWindow::exitPiP() {
-    this->videoWidget->pause();
     QApplication::exit(0);
 }
 
-void PiPWindow::sliderPressed() {
-    this->ignoreProgressChange = true;
-}
-
-void PiPWindow::sliderReleased() {
-    this->ignoreProgressChange = false;
-    float progress = static_cast<float>(this->progressSlider->value()) / static_cast<float>(this->progressSlider->maximum());
-    this->videoWidget->setPosition(progress);
-}
-
-void PiPWindow::audioTrackButtonPressed() {
-    QMenu *menu = new QMenu(this->audioTrackButton);
-    connect(menu, &QMenu::triggered, this, &PiPWindow::audioTrackSelected);
-    connect(menu, &QMenu::aboutToHide, this, &PiPWindow::audioTrackMenuWillBeHidden);
-
-    QList<Track> *tracks = this->videoWidget->getTracks();
-    for (int i = 0; i < tracks->size(); i++) {
-        Track track = tracks->at(i);
-        if (track.type == TrackTypeAudio) {
-            QString trackName;
-            if (track.title.isEmpty()) {
-                trackName = QString();
-                trackName.sprintf("Track #%d", track.id);
-            } else {
-                trackName = track.title;
-            }
-            QAction *action = new QAction(trackName, menu);
-            action->setData(track.id);
-            action->setCheckable(true);
-            action->setChecked(track.selected);
-            menu->addAction(action);
-        }
-    }
-
-    this->audioTrackButton->setMenu(menu);
-    this->audioTrackButton->showMenu();
-}
-
-void PiPWindow::subtitlesTrackButtonPressed() {
-    QMenu *menu = new QMenu(this->subtitlesTrackButton);
-    connect(menu, &QMenu::triggered, this, &PiPWindow::subtitlesTrackSelected);
-    connect(menu, &QMenu::aboutToHide, this, &PiPWindow::subtitlesTrackMenuWillBeHidden);
-
-    QList<Track> *tracks = this->videoWidget->getTracks();
-    for (int i = 0; i < tracks->size(); i++) {
-        Track track = tracks->at(i);
-        if (track.type == TrackTypeSubtitles) {
-            QString trackName;
-            if (track.title.isEmpty()) {
-                trackName = QString();
-                trackName.sprintf("Subtitles #%d", track.id);
-            } else {
-                trackName = track.title;
-            }
-            QAction *action = new QAction(trackName, menu);
-            action->setData(track.id);
-            action->setCheckable(true);
-            action->setChecked(track.selected);
-            menu->addAction(action);
-        }
-    }
-
-    this->subtitlesTrackButton->setMenu(menu);
-    this->subtitlesTrackButton->showMenu();
-}
-
-void PiPWindow::audioTrackSelected(QAction *action) {
-    if (action->isChecked()) {
-        Track track;
-        track.id = action->data().toInt();
-        track.type = TrackTypeAudio;
-        this->videoWidget->enableTrack(track);
-    }
-    this->audioTrackButton->setMenu(nullptr);
-}
-
-void PiPWindow::audioTrackMenuWillBeHidden() {
-    this->audioTrackButton->setMenu(nullptr);
-}
-
-void PiPWindow::subtitlesTrackSelected(QAction *action) {
-    if (action->isChecked()) {
-        Track track;
-        track.id = action->data().toInt();
-        track.type = TrackTypeSubtitles;
-        this->videoWidget->enableTrack(track);
-    } else {
-        this->videoWidget->disableSubtitlesTrack();
-    }
-    this->subtitlesTrackButton->setMenu(nullptr);
-}
-
-void PiPWindow::subtitlesTrackMenuWillBeHidden() {
-    this->subtitlesTrackButton->setMenu(nullptr);
-}
-
-void PiPWindow::moveToCorner(bool forceVisible) {
+void PiPWindow::moveToCorner(PiPPositionMode positionMode) {
     QPoint windowCenter = this->geometry().center();
     QSize windowSize = this->geometry().size();
     QPoint screenCenter = this->getCurrentScreen()->geometry().center();
     QSize screenSize = this->getCurrentScreen()->geometry().size();
     QPoint newPosition;
     if (windowCenter.x() <= screenCenter.x() && windowCenter.y() <= screenCenter.y()) {
-        int x = OFFSET;
-        if (windowCenter.x() < 0 && !forceVisible) {
+        int x = BOUNDS_OFFSET;
+        if ((windowCenter.x() < 0 && positionMode != ForceVisible) || positionMode == ForceHidden) {
             x -= windowSize.width();
         }
-        newPosition = QPoint(x, OFFSET);
+        newPosition = QPoint(x, BOUNDS_OFFSET);
     } else if (windowCenter.x() <= screenCenter.x() && windowCenter.y() > screenCenter.y()) {
-        int x = OFFSET;
-        if (windowCenter.x() < 0 && !forceVisible) {
+        int x = BOUNDS_OFFSET;
+        if ((windowCenter.x() < 0 && positionMode != ForceVisible) || positionMode == ForceHidden) {
             x -= windowSize.width();
         }
-        newPosition = QPoint(x, screenSize.height() - windowSize.height() - OFFSET);
+        newPosition = QPoint(x, screenSize.height() - windowSize.height() - BOUNDS_OFFSET);
     } else if (windowCenter.x() > screenCenter.x() && windowCenter.y() <= screenCenter.y()) {
-        int x = screenSize.width() - windowSize.width() - OFFSET;
-        if (windowCenter.x() > screenSize.width() && !forceVisible) {
+        int x = screenSize.width() - windowSize.width() - BOUNDS_OFFSET;
+        if ((windowCenter.x() > screenSize.width() && positionMode != ForceVisible) || positionMode == ForceHidden) {
             x += windowSize.width();
         }
-        newPosition = QPoint(x, OFFSET);
+        newPosition = QPoint(x, BOUNDS_OFFSET);
     } else {
-        int x = screenSize.width() - windowSize.width() - OFFSET;
-        if (windowCenter.x() > screenSize.width() && !forceVisible) {
+        int x = screenSize.width() - windowSize.width() - BOUNDS_OFFSET;
+        if ((windowCenter.x() > screenSize.width() && positionMode != ForceVisible) || positionMode == ForceHidden) {
             x += windowSize.width();
         }
-        newPosition = QPoint(x, screenSize.height() - windowSize.height() - OFFSET);
+        newPosition = QPoint(x, screenSize.height() - windowSize.height() - BOUNDS_OFFSET);
     }
 
-    this->setVisuallyMuted((windowCenter.x() < 0 || windowCenter.x() > screenSize.width()) && !forceVisible);
+    bool xPositionOutOfBounds = windowCenter.x() < 0 || windowCenter.x() > screenSize.width();
+    this->setVisuallyMuted((xPositionOutOfBounds && positionMode != ForceVisible) || positionMode == ForceHidden);
 
     QPropertyAnimation *animation = new QPropertyAnimation(this, "pos");
     animation->setDuration(100);
@@ -337,10 +227,23 @@ void PiPWindow::moveToCorner(bool forceVisible) {
 }
 
 void PiPWindow::resizeEvent(QResizeEvent *event) {
-    int maxWidth = static_cast<int>(floor((this->getCurrentScreen()->size().width() - OFFSET * 2) / 2));
+    float maxRatio = this->mode() == PiPWindowModePlayer ? 0.5f : 0.7f;
+    int maxWidth = static_cast<int>(floor((this->getCurrentScreen()->size().width() - BOUNDS_OFFSET * 2) * maxRatio));
+    int maxHeight = static_cast<int>(floor((this->getCurrentScreen()->size().height() - BOUNDS_OFFSET * 2) * maxRatio));
     int width = std::min(maxWidth, event->size().width());
-    QSize finalSize = QSize(width, static_cast<int>(floor(width / this->aspectRatio)));
+    int height = 0;
+    if (this->mode() == PiPWindowModePlayer) {
+        height = static_cast<int>(floor(width / this->aspectRatio));
+    } else {
+        height = std::min(maxHeight, event->size().height());
+    }
+    QSize finalSize = QSize(width, height);
     this->resize(finalSize);
+
+    this->exitButton->move(width - BOUNDS_OFFSET - this->exitButton->size().width(), BOUNDS_OFFSET);
+    this->draggingView->move(this->exitButton->pos().x() - BOUNDS_OFFSET / 2 - this->draggingView->size().width(), BOUNDS_OFFSET);
+    this->bottomRightSizeGrip->move(width - this->bottomRightSizeGrip->size().width(),
+                                    finalSize.height() - this->bottomRightSizeGrip->size().height());
 }
 
 QScreen *PiPWindow::getCurrentScreen() {
@@ -349,13 +252,10 @@ QScreen *PiPWindow::getCurrentScreen() {
 }
 
 void PiPWindow::setVisuallyMuted(bool muted) {
-    if (this->visuallyMuted == muted) {
-        return;
-    }
     this->visuallyMuted = muted;
-    if (muted) {
-        this->windowDragger->setStyleSheet("WindowDragger { background-color: #404040; border: 2px solid #A0A0A0; }");
-    } else {
-        this->windowDragger->setStyleSheet("WindowDragger { background-color: transparent; border: none; }");
+    this->mutedOverlayWidget->setMuted(muted);
+    this->webContentWidget->setAttribute(Qt::WA_TransparentForMouseEvents, muted);
+    if (this->mode() == PiPWindowModeWeb && !muted) {
+        this->onWindowHover();
     }
 }
