@@ -20,7 +20,7 @@ In this mode video will be played by [mpv](https://github.com/mpv-player/mpv). T
 
 Use this mode, if you want to open video from some other web service (for example, Vimeo or Netflix). 
 
-![](qt_pip_web_example.png)
+![](qt_pip_example_2.png)
 
 ### Stdin input
 
