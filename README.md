@@ -6,7 +6,7 @@ Picture in Picture player (inspired by macOS).
 
 You can try to install **.deb** package from [the latest release](https://github.com/leonspok/QtPiP/releases/latest).
 
-QtPiP was tested only on Xubuntu 18.04 (amd64).
+QtPiP was tested only on Xubuntu 18.04 (amd64) with X11.
 
 ## Usage
 
